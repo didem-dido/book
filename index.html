@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitaplığım - Kitap Takip</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { overscroll-behavior: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                    <h1 class="text-2xl font-bold text-gray-800">Kitaplığım</h1>
+                </div>
+                <button onclick="openModal()" class="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="hidden sm:inline">Ekle</span>
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="stats">
+                <!-- Stats will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-4">
+            <button onclick="changeTab('reading')" id="tab-reading" class="px-5 py-2.5 rounded-lg font-medium bg-purple-600 text-white">Okuyorum</button>
+            <button onclick="changeTab('toRead')" id="tab-toRead" class="px-5 py-2.5 rounded-lg font-medium bg-white text-gray-600">Okunacak</button>
+            <button onclick="changeTab('finished')" id="tab-finished" class="px-5 py-2.5 rounded-lg font-medium bg-white text-gray-600">Okudum</button>
+        </div>
+
+        <!-- Books Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" id="booksGrid">
+            <!-- Books will be rendered here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl">
+            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+            <p class="text-gray-500 text-sm">Bu kategoride henüz kitap yok</p>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Yeni Kitap</h2>
+                <button onclick="closeModal()" class="text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <!-- EPUB Upload -->
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
+                    <label class="flex flex-col items-center cursor-pointer">
+                        <svg class="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <span class="text-sm font-medium text-purple-700 mb-1">EPUB Yükle</span>
+                        <span class="text-xs text-gray-600">Otomatik bilgi çıkar</span>
+                        <input type="file" accept=".epub" onchange="handleEpub(event)" class="hidden" id="epubInput">
+                    </label>
+                    <div id="epubLoading" class="hidden mt-3 text-center">
+                        <div class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                        <p class="text-xs text-gray-600 mt-2">İşleniyor...</p>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs">
+                        <span class="px-2 bg-white text-gray-500">veya manuel</span>
+                    </div>
+                </div>
+
+                <input type="text" id="bookTitle" class="w-full px-3 py-2 border rounded-lg" placeholder="Kitap Adı *">
+                <input type="text" id="bookAuthor" class="w-full px-3 py-2 border rounded-lg" placeholder="Yazar *">
+                <input type="number" id="bookPages" class="w-full px-3 py-2 border rounded-lg" placeholder="Toplam Sayfa">
+                
+                <select id="bookStatus" class="w-full px-3 py-2 border rounded-lg bg-white">
+                    <option value="reading">Okuyorum</option>
+                    <option value="toRead">Okunacak</option>
+                    <option value="finished">Okudum</option>
+                </select>
+
+                <img id="bookCover" class="hidden h-40 mx-auto rounded-lg shadow-md">
+                
+                <input type="file" accept="image/*" onchange="handleImage(event)" class="w-full px-3 py-2 border rounded-lg text-xs">
+                
+                <button onclick="addBook()" class="w-full bg-purple-600 text-white py-2.5 rounded-lg font-medium hover:bg-purple-700">
+                    Ekle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let books = [];
+        let activeTab = 'reading';
+        let currentCoverUrl = '';
+
+        // Load data
+        function loadBooks() {
+            try {
+                const saved = localStorage.getItem('bookTrackerData');
+                if (saved) {
+                    books = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('Load error:', e);
+            }
+            renderAll();
+        }
+
+        // Save data
+        function saveBooks() {
+            try {
+                localStorage.setItem('bookTrackerData', JSON.stringify(books));
+            } catch (e) {
+                console.error('Save error:', e);
+            }
+        }
+
+        // Render everything
+        function renderAll() {
+            renderStats();
+            renderBooks();
+        }
+
+        // Render stats
+        function renderStats() {
+            const stats = {
+                reading: books.filter(b => b.status === 'reading').length,
+                toRead: books.filter(b => b.status === 'toRead').length,
+                finished: books.filter(b => b.status === 'finished').length,
+                totalPages: books.filter(b => b.status === 'finished').reduce((sum, b) => sum + b.totalPages, 0)
+            };
+
+            const statsData = [
+                { label: 'Okuyorum', value: stats.reading, color: 'blue' },
+                { label: 'Okunacak', value: stats.toRead, color: 'yellow' },
+                { label: 'Okudum', value: stats.finished, color: 'green' },
+                { label: 'Sayfa', value: stats.totalPages, color: 'purple' }
+            ];
+
+            document.getElementById('stats').innerHTML = statsData.map(stat => `
+                <div class="bg-${stat.color}-50 p-3 rounded-lg">
+                    <p class="text-xs font-medium text-${stat.color}-600 mb-1">${stat.label}</p>
+                    <p class="text-xl font-bold text-gray-800">${stat.value}</p>
+                </div>
+            `).join('');
+        }
+
+        // Render books
+        function renderBooks() {
+            const filtered = books.filter(b => b.status === activeTab);
+            const grid = document.getElementById('booksGrid');
+            const empty = document.getElementById('emptyState');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = filtered.map(book => {
+                const progress = book.totalPages > 0 ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
+                return `
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="relative aspect-[2/3] bg-gray-200">
+                            ${book.coverUrl ? 
+                                `<img src="${book.coverUrl}" alt="${book.title}" class="w-full h-full object-cover">` :
+                                `<div class="w-full h-full flex items-center justify-center">
+                                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                </div>`
+                            }
+                            <button onclick="deleteBook(${book.id})" class="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold text-gray-800 mb-1 text-sm line-clamp-2">${book.title}</h3>
+                            <p class="text-xs text-gray-600 mb-2">${book.author}</p>
+                            
+                            ${book.status === 'reading' && book.totalPages > 0 ? `
+                                <div class="mb-2">
+                                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                        <span>${book.currentPage}/${book.totalPages}</span>
+                                        <span>%${progress}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div class="bg-purple-600 h-1.5 rounded-full" style="width: ${progress}%"></div>
+                                    </div>
+                                    <input type="number" value="${book.currentPage}" 
+                                        onchange="updateProgress(${book.id}, this.value)"
+                                        class="w-full mt-2 px-2 py-1 border rounded text-xs" placeholder="Sayfa">
+                                </div>
+                            ` : ''}
+                            
+                            <select onchange="moveBook(${book.id}, this.value)" 
+                                class="w-full px-2 py-1 border rounded text-xs bg-white">
+                                <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>Okuyorum</option>
+                                <option value="toRead" ${book.status === 'toRead' ? 'selected' : ''}>Okunacak</option>
+                                <option value="finished" ${book.status === 'finished' ? 'selected' : ''}>Okudum</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Tab change
+        function changeTab(tab) {
+            activeTab = tab;
+            ['reading', 'toRead', 'finished'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    btn.className = 'px-5 py-2.5 rounded-lg font-medium bg-purple-600 text-white';
+                } else {
+                    btn.className = 'px-5 py-2.5 rounded-lg font-medium bg-white text-gray-600';
+                }
+            });
+            renderBooks();
+        }
+
+        // Modal
+        function openModal() {
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            document.getElementById('bookPages').value = '';
+            document.getElementById('bookStatus').value = 'reading';
+            document.getElementById('bookCover').classList.add('hidden');
+            currentCoverUrl = '';
+        }
+
+        // Add book
+        function addBook() {
+            const title = document.getElementById('bookTitle').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            const totalPages = parseInt(document.getElementById('bookPages').value) || 0;
+            const status = document.getElementById('bookStatus').value;
+
+            if (!title || !author) {
+                alert('Lütfen kitap adı ve yazar girin');
+                return;
+            }
+
+            books.push({
+                id: Date.now(),
+                title,
+                author,
+                totalPages,
+                currentPage: 0,
+                status,
+                coverUrl: currentCoverUrl,
+                addedDate: new Date().toISOString()
+            });
+
+            saveBooks();
+            renderAll();
+            closeModal();
+        }
+
+        // Update progress
+        function updateProgress(id, newPage) {
+            const book = books.find(b => b.id === id);
+            if (book) {
+                book.currentPage = Math.min(parseInt(newPage) || 0, book.totalPages);
+                if (book.currentPage >= book.totalPages) {
+                    book.status = 'finished';
+                }
+                saveBooks();
+                renderAll();
+            }
+        }
+
+        // Move book
+        function moveBook(id, newStatus) {
+            const book = books.find(b => b.id === id);
+            if (book) {
+                book.status = newStatus;
+                saveBooks();
+                renderAll();
+            }
+        }
+
+        // Delete book
+        function deleteBook(id) {
+            if (confirm('Bu kitabı silmek istediğinizden emin misiniz?')) {
+                books = books.filter(b => b.id !== id);
+                saveBooks();
+                renderAll();
+            }
+        }
+
+        // Handle image upload
+        function handleImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentCoverUrl = e.target.result;
+                    const img = document.getElementById('bookCover');
+                    img.src = currentCoverUrl;
+                    img.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Handle EPUB upload
+        async function handleEpub(event) {
+            const file = event.target.files[0];
+            if (!file || !file.name.endsWith('.epub')) {
+                alert('Lütfen geçerli bir EPUB dosyası seçin');
+                return;
+            }
+
+            document.getElementById('epubLoading').classList.remove('hidden');
+
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
+                let metadata = { title: '', author: '', coverImage: null };
+
+                // Find OPF file
+                let opfFile = null;
+                const containerXml = await contents.file('META-INF/container.xml')?.async('text');
+                
+                if (containerXml) {
+                    const parser = new DOMParser();
+                    const containerDoc = parser.parseFromString(containerXml, 'text/xml');
+                    const rootfile = containerDoc.querySelector('rootfile');
+                    if (rootfile) {
+                        const opfPath = rootfile.getAttribute('full-path');
+                        opfFile = contents.file(opfPath);
+                    }
+                }
+
+                if (!opfFile) {
+                    Object.keys(contents.files).forEach(filename => {
+                        if (filename.endsWith('.opf')) opfFile = contents.files[filename];
+                    });
+                }
+
+                if (opfFile) {
+                    const opfContent = await opfFile.async('text');
+                    const parser = new DOMParser();
+                    const opfDoc = parser.parseFromString(opfContent, 'text/xml');
+
+                    const titleElement = opfDoc.querySelector('title');
+                    if (titleElement) metadata.title = titleElement.textContent.trim();
+
+                    const creatorElement = opfDoc.querySelector('creator');
+                    if (creatorElement) metadata.author = creatorElement.textContent.trim();
+
+                    // Find cover
+                    const coverMeta = opfDoc.querySelector('meta[name="cover"]');
+                    let coverId = coverMeta?.getAttribute('content');
+                    
+                    if (coverId) {
+                        const coverItem = opfDoc.querySelector(`item[id="${coverId}"]`);
+                        if (coverItem) {
+                            let coverPath = coverItem.getAttribute('href');
+                            const opfPath = opfFile.name;
+                            const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
+                            coverPath = opfDir + coverPath;
+
+                            const coverFile = contents.file(coverPath);
+                            if (coverFile) {
+                                const coverBlob = await coverFile.async('blob');
+                                metadata.coverImage = URL.createObjectURL(coverBlob);
+                            }
+                        }
+                    }
+                }
+
+                if (!metadata.title) {
+                    metadata.title = file.name.replace('.epub', '').replace(/_/g, ' ');
+                }
+
+                document.getElementById('bookTitle').value = metadata.title || '';
+                document.getElementById('bookAuthor').value = metadata.author || '';
+                
+                if (metadata.coverImage) {
+                    currentCoverUrl = metadata.coverImage;
+                    const img = document.getElementById('bookCover');
+                    img.src = currentCoverUrl;
+                    img.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('EPUB error:', error);
+                alert('EPUB dosyası okunamadı. Lütfen bilgileri manuel girin.');
+            } finally {
+                document.getElementById('epubLoading').classList.add('hidden');
+            }
+        }
+
+        // Initialize
+        loadBooks();
+        console.log('Sayfa yüklendi! Kitap sayısı:', books.length);
+    </script>
+</body>
+</html>
