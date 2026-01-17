@@ -642,4 +642,123 @@
             if (book) {
                 book.status = newStatus;
                 saveBooks();
-                render
+                renderAll();
+            }
+        }
+
+        // Delete book
+        function deleteBook(id) {
+            if (confirm('Bu kitabı silmek istediğinizden emin misiniz?')) {
+                books = books.filter(b => b.id !== id);
+                saveBooks();
+                renderAll();
+            }
+        }
+
+        // Handle image upload
+        function handleImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentCoverUrl = e.target.result;
+                    const img = document.getElementById('bookCover');
+                    img.src = currentCoverUrl;
+                    img.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Handle EPUB upload
+        async function handleEpub(event) {
+            const file = event.target.files[0];
+            if (!file || !file.name.endsWith('.epub')) {
+                alert('Lütfen geçerli bir EPUB dosyası seçin');
+                return;
+            }
+
+            document.getElementById('epubLoading').classList.remove('hidden');
+
+            try {
+                const zip = new JSZip();
+                const contents = await zip.loadAsync(file);
+                let metadata = { title: '', author: '', coverImage: null };
+
+                let opfFile = null;
+                const containerXml = await contents.file('META-INF/container.xml')?.async('text');
+                
+                if (containerXml) {
+                    const parser = new DOMParser();
+                    const containerDoc = parser.parseFromString(containerXml, 'text/xml');
+                    const rootfile = containerDoc.querySelector('rootfile');
+                    if (rootfile) {
+                        const opfPath = rootfile.getAttribute('full-path');
+                        opfFile = contents.file(opfPath);
+                    }
+                }
+
+                if (!opfFile) {
+                    Object.keys(contents.files).forEach(filename => {
+                        if (filename.endsWith('.opf')) opfFile = contents.files[filename];
+                    });
+                }
+
+                if (opfFile) {
+                    const opfContent = await opfFile.async('text');
+                    const parser = new DOMParser();
+                    const opfDoc = parser.parseFromString(opfContent, 'text/xml');
+
+                    const titleElement = opfDoc.querySelector('title');
+                    if (titleElement) metadata.title = titleElement.textContent.trim();
+
+                    const creatorElement = opfDoc.querySelector('creator');
+                    if (creatorElement) metadata.author = creatorElement.textContent.trim();
+
+                    const coverMeta = opfDoc.querySelector('meta[name="cover"]');
+                    let coverId = coverMeta?.getAttribute('content');
+                    
+                    if (coverId) {
+                        const coverItem = opfDoc.querySelector(`item[id="${coverId}"]`);
+                        if (coverItem) {
+                            let coverPath = coverItem.getAttribute('href');
+                            const opfPath = opfFile.name;
+                            const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
+                            coverPath = opfDir + coverPath;
+
+                            const coverFile = contents.file(coverPath);
+                            if (coverFile) {
+                                const coverBlob = await coverFile.async('blob');
+                                metadata.coverImage = URL.createObjectURL(coverBlob);
+                            }
+                        }
+                    }
+                }
+
+                if (!metadata.title) {
+                    metadata.title = file.name.replace('.epub', '').replace(/_/g, ' ');
+                }
+
+                document.getElementById('bookTitle').value = metadata.title || '';
+                document.getElementById('bookAuthor').value = metadata.author || '';
+                
+                if (metadata.coverImage) {
+                    currentCoverUrl = metadata.coverImage;
+                    const img = document.getElementById('bookCover');
+                    img.src = currentCoverUrl;
+                    img.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('EPUB error:', error);
+                alert('EPUB dosyası okunamadı. Lütfen bilgileri manuel girin.');
+            } finally {
+                document.getElementById('epubLoading').classList.add('hidden');
+            }
+        }
+
+        // Initialize
+        loadBooks();
+    </script>
+</body>
+</html>
