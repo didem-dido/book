@@ -43,10 +43,11 @@
         </div>
 
         <!-- Tabs -->
-        <div class="flex gap-2 mb-4">
-            <button onclick="changeTab('reading')" id="tab-reading" class="px-5 py-2.5 rounded-lg font-medium bg-purple-600 text-white">Okuyorum</button>
-            <button onclick="changeTab('toRead')" id="tab-toRead" class="px-5 py-2.5 rounded-lg font-medium bg-white text-gray-600">Okunacak</button>
-            <button onclick="changeTab('finished')" id="tab-finished" class="px-5 py-2.5 rounded-lg font-medium bg-white text-gray-600">Okudum</button>
+        <div class="flex gap-2 mb-4 overflow-x-auto">
+            <button onclick="changeTab('reading')" id="tab-reading" class="px-5 py-2.5 rounded-lg font-medium whitespace-nowrap bg-purple-600 text-white">Okuyorum</button>
+            <button onclick="changeTab('toRead')" id="tab-toRead" class="px-5 py-2.5 rounded-lg font-medium whitespace-nowrap bg-white text-gray-600">Okunacak</button>
+            <button onclick="changeTab('finished')" id="tab-finished" class="px-5 py-2.5 rounded-lg font-medium whitespace-nowrap bg-white text-gray-600">Okudum</button>
+            <button onclick="changeTab('abandoned')" id="tab-abandoned" class="px-5 py-2.5 rounded-lg font-medium whitespace-nowrap bg-white text-gray-600">Bıraktım</button>
         </div>
 
         <!-- Books Grid -->
@@ -63,11 +64,11 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Add/Edit Modal -->
     <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Yeni Kitap</h2>
+                <h2 class="text-xl font-bold text-gray-800" id="modalTitle">Yeni Kitap</h2>
                 <button onclick="closeModal()" class="text-gray-500">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -76,8 +77,8 @@
             </div>
 
             <div class="space-y-3">
-                <!-- EPUB Upload -->
-                <div class="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
+                <!-- EPUB Upload (only for new books) -->
+                <div id="epubUploadSection" class="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
                     <label class="flex flex-col items-center cursor-pointer">
                         <svg class="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
@@ -97,7 +98,7 @@
                         <div class="w-full border-t border-gray-300"></div>
                     </div>
                     <div class="relative flex justify-center text-xs">
-                        <span class="px-2 bg-white text-gray-500">veya manuel</span>
+                        <span class="px-2 bg-white text-gray-500">temel bilgiler</span>
                     </div>
                 </div>
 
@@ -109,15 +110,54 @@
                     <option value="reading">Okuyorum</option>
                     <option value="toRead">Okunacak</option>
                     <option value="finished">Okudum</option>
+                    <option value="abandoned">Bıraktım</option>
                 </select>
 
                 <img id="bookCover" class="hidden h-40 mx-auto rounded-lg shadow-md">
                 
                 <input type="file" accept="image/*" onchange="handleImage(event)" class="w-full px-3 py-2 border rounded-lg text-xs">
                 
-                <button onclick="addBook()" class="w-full bg-purple-600 text-white py-2.5 rounded-lg font-medium hover:bg-purple-700">
-                    Ekle
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs">
+                        <span class="px-2 bg-white text-gray-500">notlarım</span>
+                    </div>
+                </div>
+
+                <textarea id="bookLiked" class="w-full px-3 py-2 border rounded-lg text-sm resize-none" rows="2" placeholder="Neden sevdim?"></textarea>
+                
+                <textarea id="bookDisliked" class="w-full px-3 py-2 border rounded-lg text-sm resize-none" rows="2" placeholder="Neden sevmedim?"></textarea>
+                
+                <textarea id="bookWhyAbandoned" class="w-full px-3 py-2 border rounded-lg text-sm resize-none" rows="2" placeholder="Neden bıraktım?"></textarea>
+                
+                <input type="text" id="bookFavChar" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="En sevdiğim karakter">
+                
+                <input type="text" id="bookDislikedChar" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Sevmediğim karakter">
+                
+                <textarea id="bookNotes" class="w-full px-3 py-2 border rounded-lg text-sm resize-none" rows="3" placeholder="Hatırlamak istediklerim..."></textarea>
+                
+                <button onclick="saveBook()" class="w-full bg-purple-600 text-white py-2.5 rounded-lg font-medium hover:bg-purple-700">
+                    Kaydet
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-5 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Kitap Detayları</h2>
+                <button onclick="closeDetailsModal()" class="text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="detailsContent" class="space-y-4">
+                <!-- Details will be rendered here -->
             </div>
         </div>
     </div>
@@ -126,6 +166,7 @@
         let books = [];
         let activeTab = 'reading';
         let currentCoverUrl = '';
+        let editingBookId = null;
 
         // Load data
         function loadBooks() {
@@ -194,18 +235,21 @@
             empty.classList.add('hidden');
             grid.innerHTML = filtered.map(book => {
                 const progress = book.totalPages > 0 ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
+                const hasNotes = book.liked || book.disliked || book.whyAbandoned || book.favChar || book.dislikedChar || book.notes;
+                
                 return `
                     <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                        <div class="relative aspect-[2/3] bg-gray-200">
+                        <div class="relative aspect-[2/3] bg-gray-200" onclick="showDetails(${book.id})">
                             ${book.coverUrl ? 
-                                `<img src="${book.coverUrl}" alt="${book.title}" class="w-full h-full object-cover">` :
-                                `<div class="w-full h-full flex items-center justify-center">
+                                `<img src="${book.coverUrl}" alt="${book.title}" class="w-full h-full object-cover cursor-pointer">` :
+                                `<div class="w-full h-full flex items-center justify-center cursor-pointer">
                                     <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                                     </svg>
                                 </div>`
                             }
-                            <button onclick="deleteBook(${book.id})" class="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600">
+                            ${hasNotes ? '<div class="absolute top-2 left-2 bg-purple-500 text-white px-2 py-1 rounded-full text-xs">📝</div>' : ''}
+                            <button onclick="event.stopPropagation(); deleteBook(${book.id})" class="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                 </svg>
@@ -230,12 +274,18 @@
                                 </div>
                             ` : ''}
                             
-                            <select onchange="moveBook(${book.id}, this.value)" 
-                                class="w-full px-2 py-1 border rounded text-xs bg-white">
-                                <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>Okuyorum</option>
-                                <option value="toRead" ${book.status === 'toRead' ? 'selected' : ''}>Okunacak</option>
-                                <option value="finished" ${book.status === 'finished' ? 'selected' : ''}>Okudum</option>
-                            </select>
+                            <div class="flex gap-1">
+                                <select onchange="moveBook(${book.id}, this.value)" 
+                                    class="flex-1 px-2 py-1 border rounded text-xs bg-white">
+                                    <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>Okuyorum</option>
+                                    <option value="toRead" ${book.status === 'toRead' ? 'selected' : ''}>Okunacak</option>
+                                    <option value="finished" ${book.status === 'finished' ? 'selected' : ''}>Okudum</option>
+                                    <option value="abandoned" ${book.status === 'abandoned' ? 'selected' : ''}>Bıraktım</option>
+                                </select>
+                                <button onclick="editBook(${book.id})" class="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">
+                                    ✏️
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -245,58 +295,213 @@
         // Tab change
         function changeTab(tab) {
             activeTab = tab;
-            ['reading', 'toRead', 'finished'].forEach(t => {
+            ['reading', 'toRead', 'finished', 'abandoned'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
                 if (t === tab) {
-                    btn.className = 'px-5 py-2.5 rounded-lg font-medium bg-purple-600 text-white';
+                    btn.className = 'px-5 py-2.5 rounded-lg font-medium whitespace-nowrap bg-purple-600 text-white';
                 } else {
-                    btn.className = 'px-5 py-2.5 rounded-lg font-medium bg-white text-gray-600';
+                    btn.className = 'px-5 py-2.5 rounded-lg font-medium whitespace-nowrap bg-white text-gray-600';
                 }
             });
             renderBooks();
         }
 
-        // Modal
+        // Modal functions
         function openModal() {
+            editingBookId = null;
+            document.getElementById('modalTitle').textContent = 'Yeni Kitap';
+            document.getElementById('epubUploadSection').classList.remove('hidden');
+            clearModalFields();
             document.getElementById('modal').classList.remove('hidden');
         }
 
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
+            clearModalFields();
+        }
+
+        function clearModalFields() {
             document.getElementById('bookTitle').value = '';
             document.getElementById('bookAuthor').value = '';
             document.getElementById('bookPages').value = '';
             document.getElementById('bookStatus').value = 'reading';
+            document.getElementById('bookLiked').value = '';
+            document.getElementById('bookDisliked').value = '';
+            document.getElementById('bookWhyAbandoned').value = '';
+            document.getElementById('bookFavChar').value = '';
+            document.getElementById('bookDislikedChar').value = '';
+            document.getElementById('bookNotes').value = '';
             document.getElementById('bookCover').classList.add('hidden');
             currentCoverUrl = '';
         }
 
-        // Add book
-        function addBook() {
+        // Edit book
+        function editBook(id) {
+            const book = books.find(b => b.id === id);
+            if (!book) return;
+
+            editingBookId = id;
+            document.getElementById('modalTitle').textContent = 'Kitabı Düzenle';
+            document.getElementById('epubUploadSection').classList.add('hidden');
+            
+            document.getElementById('bookTitle').value = book.title;
+            document.getElementById('bookAuthor').value = book.author;
+            document.getElementById('bookPages').value = book.totalPages || '';
+            document.getElementById('bookStatus').value = book.status;
+            document.getElementById('bookLiked').value = book.liked || '';
+            document.getElementById('bookDisliked').value = book.disliked || '';
+            document.getElementById('bookWhyAbandoned').value = book.whyAbandoned || '';
+            document.getElementById('bookFavChar').value = book.favChar || '';
+            document.getElementById('bookDislikedChar').value = book.dislikedChar || '';
+            document.getElementById('bookNotes').value = book.notes || '';
+            
+            if (book.coverUrl) {
+                currentCoverUrl = book.coverUrl;
+                const img = document.getElementById('bookCover');
+                img.src = book.coverUrl;
+                img.classList.remove('hidden');
+            }
+            
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        // Save book (add or update)
+        function saveBook() {
             const title = document.getElementById('bookTitle').value.trim();
             const author = document.getElementById('bookAuthor').value.trim();
             const totalPages = parseInt(document.getElementById('bookPages').value) || 0;
             const status = document.getElementById('bookStatus').value;
+            const liked = document.getElementById('bookLiked').value.trim();
+            const disliked = document.getElementById('bookDisliked').value.trim();
+            const whyAbandoned = document.getElementById('bookWhyAbandoned').value.trim();
+            const favChar = document.getElementById('bookFavChar').value.trim();
+            const dislikedChar = document.getElementById('bookDislikedChar').value.trim();
+            const notes = document.getElementById('bookNotes').value.trim();
 
             if (!title || !author) {
                 alert('Lütfen kitap adı ve yazar girin');
                 return;
             }
 
-            books.push({
-                id: Date.now(),
-                title,
-                author,
-                totalPages,
-                currentPage: 0,
-                status,
-                coverUrl: currentCoverUrl,
-                addedDate: new Date().toISOString()
-            });
+            if (editingBookId) {
+                // Update existing book
+                const bookIndex = books.findIndex(b => b.id === editingBookId);
+                if (bookIndex !== -1) {
+                    books[bookIndex] = {
+                        ...books[bookIndex],
+                        title,
+                        author,
+                        totalPages,
+                        status,
+                        coverUrl: currentCoverUrl,
+                        liked,
+                        disliked,
+                        whyAbandoned,
+                        favChar,
+                        dislikedChar,
+                        notes
+                    };
+                }
+            } else {
+                // Add new book
+                books.push({
+                    id: Date.now(),
+                    title,
+                    author,
+                    totalPages,
+                    currentPage: 0,
+                    status,
+                    coverUrl: currentCoverUrl,
+                    liked,
+                    disliked,
+                    whyAbandoned,
+                    favChar,
+                    dislikedChar,
+                    notes,
+                    addedDate: new Date().toISOString()
+                });
+            }
 
             saveBooks();
             renderAll();
             closeModal();
+        }
+
+        // Show details modal
+        function showDetails(id) {
+            const book = books.find(b => b.id === id);
+            if (!book) return;
+
+            const progress = book.totalPages > 0 ? Math.round((book.currentPage / book.totalPages) * 100) : 0;
+            
+            let content = `
+                <div class="text-center mb-4">
+                    ${book.coverUrl ? 
+                        `<img src="${book.coverUrl}" alt="${book.title}" class="h-48 mx-auto rounded-lg shadow-md mb-3">` :
+                        `<div class="h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                            <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>`
+                    }
+                    <h3 class="font-bold text-xl text-gray-800 mb-1">${book.title}</h3>
+                    <p class="text-gray-600 mb-2">${book.author}</p>
+                    ${book.totalPages > 0 ? `<p class="text-sm text-gray-500">${book.totalPages} sayfa</p>` : ''}
+                </div>
+            `;
+
+            if (book.status === 'reading' && book.totalPages > 0) {
+                content += `
+                    <div class="bg-purple-50 p-3 rounded-lg mb-4">
+                        <div class="flex justify-between text-sm text-gray-700 mb-2">
+                            <span>İlerleme</span>
+                            <span class="font-bold">${book.currentPage}/${book.totalPages} (%${progress})</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const sections = [
+                { title: '💚 Neden Sevdim', content: book.liked },
+                { title: '💔 Neden Sevmedim', content: book.disliked },
+                { title: '⏸️ Neden Bıraktım', content: book.whyAbandoned },
+                { title: '⭐ En Sevdiğim Karakter', content: book.favChar },
+                { title: '👎 Sevmediğim Karakter', content: book.dislikedChar },
+                { title: '📝 Hatırlamak İstediklerim', content: book.notes }
+            ];
+
+            sections.forEach(section => {
+                if (section.content) {
+                    content += `
+                        <div class="mb-3">
+                            <h4 class="font-semibold text-gray-700 text-sm mb-1">${section.title}</h4>
+                            <p class="text-gray-600 text-sm bg-gray-50 p-2 rounded">${section.content}</p>
+                        </div>
+                    `;
+                }
+            });
+
+            if (!book.liked && !book.disliked && !book.whyAbandoned && !book.favChar && !book.dislikedChar && !book.notes) {
+                content += `
+                    <div class="text-center py-8 text-gray-400">
+                        <p class="text-sm">Bu kitap için henüz not eklenmemiş</p>
+                        <button onclick="closeDetailsModal(); editBook(${book.id})" 
+                            class="mt-3 text-purple-600 text-sm hover:underline">
+                            Not Ekle
+                        </button>
+                    </div>
+                `;
+            }
+
+            document.getElementById('detailsContent').innerHTML = content;
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
         }
 
         // Update progress
@@ -304,19 +509,9 @@
             const book = books.find(b => b.id === id);
             if (book) {
                 book.currentPage = Math.min(parseInt(newPage) || 0, book.totalPages);
-                if (book.currentPage >= book.totalPages) {
+                if (book.currentPage >= book.totalPages && book.totalPages > 0) {
                     book.status = 'finished';
                 }
-                saveBooks();
-                renderAll();
-            }
-        }
-
-        // Move book
-        function moveBook(id, newStatus) {
-            const book = books.find(b => b.id === id);
-            if (book) {
-                book.status = newStatus;
                 saveBooks();
                 renderAll();
             }
@@ -361,7 +556,6 @@
                 const contents = await zip.loadAsync(file);
                 let metadata = { title: '', author: '', coverImage: null };
 
-                // Find OPF file
                 let opfFile = null;
                 const containerXml = await contents.file('META-INF/container.xml')?.async('text');
                 
@@ -392,7 +586,6 @@
                     const creatorElement = opfDoc.querySelector('creator');
                     if (creatorElement) metadata.author = creatorElement.textContent.trim();
 
-                    // Find cover
                     const coverMeta = opfDoc.querySelector('meta[name="cover"]');
                     let coverId = coverMeta?.getAttribute('content');
                     
@@ -437,7 +630,16 @@
 
         // Initialize
         loadBooks();
-        console.log('Sayfa yüklendi! Kitap sayısı:', books.length);
     </script>
 </body>
-</html>
+</html>All();
+            }
+        }
+
+        // Move book
+        function moveBook(id, newStatus) {
+            const book = books.find(b => b.id === id);
+            if (book) {
+                book.status = newStatus;
+                saveBooks();
+                render
